@@ -475,7 +475,7 @@ namespace Oxide.Plugins
 
         #endregion
 
-        #region Network Cache Manager
+        #region Network Snapshot Manager
 
         private abstract class BaseNetworkSnapshotManager
         {
