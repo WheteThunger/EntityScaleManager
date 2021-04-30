@@ -40,7 +40,7 @@ More specific plugins can be built on top of Entity Scale Manager to address ent
 
 - Parented Entity Render Fix -- Fixes a client-side bug where certain types of entities are often invisible when they are parented to another entity.
   - This is an important counterpart to Entity Scale Manager since entities can only be resized by parenting them to transparent black spheres, which can cause the rendering bug.
-  - This plugin has a significant performance cost. If you cannot afford to install it, avoid resizing entities that have this rendering issue since they will usually appear invisible when resized.
+  - That plugin has a significant performance cost. If you cannot afford to install it, avoid resizing entities that have this rendering issue since they will usually appear invisible when resized.
     - Note: To determine if an entity is affected by the rendering bug, resize it, then leave the area and return, which will destroy and recreate the entity on your client.
 
 ## Commands
