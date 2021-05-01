@@ -67,9 +67,8 @@ Default configuration:
 ```
 
 - `Hide spheres after resize (performance intensive)` (`true` or `false`) -- While `true`, the transparent black spheres used for resizing entities will be hidden after the resize is complete. This effect is per client.
-  - **WARNING:** This is implemented by subscribing to hooks that Oxide calls very frequently. Oxide has a significant overhead for these calls, which can cause a significant performance drop for servers with high population and high entity count, especially if players frequently spawn in or teleport to areas with many entities.
-    - **DO NOT ENABLE** this feature if your server already has performance problems.
-    - You may test out the performance cost of this feature by reloading the plugin with this option enabled, while monitoring your server FPS before and after. You can also get a sense from the total hook time that Oxide reports next to the plugin (in seconds) when you run `o.plugins`. Note: A plugin's total hook time is expected to start at 0 when a plugin loads, and it goes up over time as the plugin gradually uses hooks. If that number climbs quickly (e.g., 1 second per minute) then it means the plugin may be using a significant percentage of your overall performance budget.
+  - **WARNING:** This is implemented by subscribing to hooks that Oxide calls very frequently. Oxide has a significant overhead for these calls, which can cause a significant performance drop for servers with high population and high entity count, especially if players frequently spawn in or teleport to areas with many entities. **DO NOT ENABLE** this feature if your server already has performance problems.
+  - You may test out the performance cost of this feature by reloading the plugin with this option enabled, while monitoring your server FPS before and after. You can also get a sense from the total hook time that Oxide reports next to the plugin (in seconds) when you run `o.plugins`. Note: A plugin's total hook time is expected to start at 0 when a plugin loads, and it goes up over time as the plugin gradually uses hooks. If that number climbs quickly (e.g., 1 second per minute) then it means the plugin may be using a significant percentage of your overall performance budget.
 
 ## Localization
 
@@ -121,7 +120,7 @@ The return value will be `-1` if any of the following are true.
 
 #### OnEntityScale
 
-- Called when an entity is about to be resized by either the `scale` command the `API_ScaleEntity` method
+- Called when an entity is about to be resized by either the `scale` command or the `API_ScaleEntity` method
 - Returning `false` will prevent the entity from being resized
 - Returning `null` will result in the default behavior
 
