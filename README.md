@@ -9,11 +9,11 @@ This plugin is primarily intended to be used by developers of other plugins.
 
 ## Use cases
 
-### Players can resize entities for fun
+#### Players can resize entities for fun
 
 Players can be granted the `entityscalemanager.unrestricted` permission to allow them to use the `scale <size>` command. Recommended only for players you trust since this can get out of hand and does not work well with all types of entities.
 
-### Other plugins can depend on this plugin to scale entities
+#### Other plugins can depend on this plugin to scale entities
 
 This is highly recommended, as opposed to each plugin implementing its own resize logic. Resizing entities has several gotchas that this plugin solves for you, listed below.
 - Instances of `SphereEntity` do not have saving enabled by default. This causes children that do have saving enabled to get orphaned on server restart and spam console errors. Saving also has to be re-enabled on each server restart since the `enableSaving` property itself is not saved.
@@ -21,7 +21,7 @@ This is highly recommended, as opposed to each plugin implementing its own resiz
   - Additionally, disabling global broadcast on an entity does not remove it from the global network group (Rust bug), so even if you spawn it in a positional network group, you have to do some hacks to remove it from the global network group on server restart.
 - The `SphereEntity` needs to be destroyed after the scaled entity is killed.
 
-### Other plugins can register their scaled entities with this plugin to hide the black sphere after resize
+#### Other plugins can register their scaled entities to hide the black sphere after resize
 
 If your plugin already implements its own resize logic, you can still integrate with this plugin to hide the black sphere after resize, if this plugin has been configured to do that (it's performance intensive so it's optional). For details, see the `API_RegisterScaledEntity` method later in the documentation.
 
