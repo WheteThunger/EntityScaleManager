@@ -111,7 +111,7 @@ Plugins can call this API to get the current scale of an entity that is tracked 
 float API_GetScale(BaseEntity entity)
 ```
 
-The return value will be `-1` if any of the following are true.
+The return value will be `1` if any of the following are true.
 - The entity is invalid
 - The entity is not tracked by Entity Scale Manager
 - The entity is not parented to a sphere (for some reason, despite being tracked by this plugin)

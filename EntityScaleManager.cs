@@ -12,7 +12,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Entity Scale Manager", "WhiteThunder", "1.0.0")]
+    [Info("Entity Scale Manager", "WhiteThunder", "2.0.0")]
     [Description("Utilities for resizing entities.")]
     internal class EntityScaleManager : CovalencePlugin
     {
@@ -189,14 +189,14 @@ namespace Oxide.Plugins
         private float API_GetScale(BaseEntity entity)
         {
             if (entity == null || entity.net == null)
-                return -1;
+                return 1;
 
             if (!_pluginData.ScaledEntities.Contains(entity.net.ID))
-                return -1;
+                return 1;
 
             var parentSphere = GetParentSphere(entity);
             if (parentSphere == null)
-                return -1;
+                return 1;
 
             return parentSphere.currentRadius;
         }
