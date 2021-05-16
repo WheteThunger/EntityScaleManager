@@ -29,8 +29,9 @@ If your plugin already implements its own resize logic, you can still integrate 
 
 Some types of entities have no issues with resizing. Others may have a multitude of issues. Here are some issues to keep an eye out for.
 
+- Resizing players or NPCs does not work -- Don't do it.
 - Resizing vehicles will break their physics -- Don't do it. It's possible to fix, but out of scope for this plugin for now.
-- Resizing auto turrets adjusts their targeting range. If you enlarge a turret, it may get stuck unable to shoot if it selects a target outside its normal range.
+- Resizing auto turrets adjusts their targeting range, but not their shooting range. If you enlarge a turret, it may get stuck unable to shoot if it selects a target outside its normal range.
 - Various entities may appear invisible (not necessarily right when you resize it), due to a rendering bug with parented entities.
   - This can be mitigated with the Parented Entity Render Fix plugin but that has a significant performance cost.
 
