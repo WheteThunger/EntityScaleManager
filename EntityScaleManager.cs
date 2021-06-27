@@ -12,7 +12,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Entity Scale Manager", "WhiteThunder", "2.0.1")]
+    [Info("Entity Scale Manager", "WhiteThunder", "2.0.2")]
     [Description("Utilities for resizing entities.")]
     internal class EntityScaleManager : CovalencePlugin
     {
@@ -27,7 +27,10 @@ namespace Oxide.Plugins
 
         private const string PermissionScaleUnrestricted = "entityscalemanager.unrestricted";
         private const string SpherePrefab = "assets/prefabs/visualization/sphere.prefab";
-        private const float ExpectedResizeDuration = 5f;
+
+        // This could be improved by calculating the time needed for the resize,
+        // since the amount of time required seems to depend on the scale.
+        private const float ExpectedResizeDuration = 7f;
 
         #endregion
 
