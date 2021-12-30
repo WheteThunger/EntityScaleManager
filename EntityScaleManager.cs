@@ -13,7 +13,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Entity Scale Manager", "WhiteThunder", "2.1.0")]
+    [Info("Entity Scale Manager", "WhiteThunder", "2.1.1")]
     [Description("Utilities for resizing entities.")]
     internal class EntityScaleManager : CovalencePlugin
     {
@@ -191,7 +191,7 @@ namespace Oxide.Plugins
         }
 
         // This hook is exposed by plugin: Telekinesis.
-        private BaseEntity OnTelekinesisStart(BasePlayer player, BaseEntity entity)
+        private Tuple<BaseEntity, BaseEntity> OnTelekinesisStart(BasePlayer player, BaseEntity entity)
         {
             if (!_pluginData.ScaledEntities.Contains(entity.net.ID))
                 return null;
@@ -200,17 +200,15 @@ namespace Oxide.Plugins
             if (parentSphere == null)
                 return null;
 
-            return parentSphere;
+            // Move the sphere, but rotate the child.
+            // This is done because spheres have default rotation to avoid client-side interpolation issues.
+            return new Tuple<BaseEntity, BaseEntity>(parentSphere, entity);
         }
 
         // This hook is exposed by plugin: Telekinesis.
-        private string CanStartTelekinesis(BasePlayer player, SphereEntity parentSphere)
+        private string CanStartTelekinesis(BasePlayer player, SphereEntity moveEntity, BaseEntity rotateEntity)
         {
-            var resizedEntity = GetFirstChild(parentSphere);
-            if (resizedEntity == null)
-                return null;
-
-            if (!_pluginData.ScaledEntities.Contains(resizedEntity.net.ID))
+            if (!_pluginData.ScaledEntities.Contains(rotateEntity.net.ID))
                 return null;
 
             return GetMessage(player, "Error.CannotMoveWithHiddenSpheres");
