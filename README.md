@@ -68,6 +68,7 @@ Default configuration:
   "Error.NotTracked": "Error: That entity is not tracked by Entity Scale Manager.",
   "Error.NotScaled": "Error: That entity is not scaled.",
   "Error.ScaleBlocked": "Error: Another plugin prevented you from scaling that entity to size {0}.",
+  "Error.CannotMoveWithHiddenSpheres": "You may not move resized entities while spheres are configured to be hidden.",
   "GetScale.Success": "Entity scale is: {0}",
   "Scale.Success": "Entity was scaled to: {0}"
 }

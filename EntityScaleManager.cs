@@ -13,7 +13,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Entity Scale Manager", "WhiteThunder", "2.0.2")]
+    [Info("Entity Scale Manager", "WhiteThunder", "2.1.0")]
     [Description("Utilities for resizing entities.")]
     internal class EntityScaleManager : CovalencePlugin
     {
@@ -49,6 +49,7 @@ namespace Oxide.Plugins
                 Unsubscribe(nameof(OnEntitySnapshot));
                 Unsubscribe(nameof(OnPlayerDisconnected));
                 Unsubscribe(nameof(OnNetworkGroupLeft));
+                Unsubscribe(nameof(CanStartTelekinesis));
             }
         }
 
@@ -187,6 +188,32 @@ namespace Oxide.Plugins
 
                 EntitySubscriptionManager.Instance.RemoveEntitySubscription(entity.net.ID, player.userID);
             }
+        }
+
+        // This hook is exposed by plugin: Telekinesis.
+        private BaseEntity OnTelekinesisStart(BasePlayer player, BaseEntity entity)
+        {
+            if (!_pluginData.ScaledEntities.Contains(entity.net.ID))
+                return null;
+
+            var parentSphere = GetParentSphere(entity);
+            if (parentSphere == null)
+                return null;
+
+            return parentSphere;
+        }
+
+        // This hook is exposed by plugin: Telekinesis.
+        private string CanStartTelekinesis(BasePlayer player, SphereEntity parentSphere)
+        {
+            var resizedEntity = GetFirstChild(parentSphere);
+            if (resizedEntity == null)
+                return null;
+
+            if (!_pluginData.ScaledEntities.Contains(resizedEntity.net.ID))
+                return null;
+
+            return GetMessage(player, "Error.CannotMoveWithHiddenSpheres");
         }
 
         #endregion
@@ -379,6 +406,13 @@ namespace Oxide.Plugins
 
         private static SphereEntity GetParentSphere(BaseEntity entity) =>
             entity.GetParentEntity() as SphereEntity;
+
+        private static BaseEntity GetFirstChild(SphereEntity parentSphere)
+        {
+            return parentSphere.children.Count > 0
+                ? parentSphere.children[0]
+                : null;
+        }
 
         private static void UnparentFromSphere(BaseEntity scaledEntity)
         {
@@ -809,20 +843,23 @@ namespace Oxide.Plugins
 
         #region Localization
 
-        private void ReplyToPlayer(IPlayer player, string messageName, params object[] args) =>
-            player.Reply(string.Format(GetMessage(player, messageName), args));
-
-        private void ChatMessage(BasePlayer player, string messageName, params object[] args) =>
-            player.ChatMessage(string.Format(GetMessage(player.IPlayer, messageName), args));
-
-        private string GetMessage(IPlayer player, string messageName, params object[] args) =>
-            GetMessage(player.Id, messageName, args);
-
         private string GetMessage(string playerId, string messageName, params object[] args)
         {
             var message = lang.GetMessage(messageName, this, playerId);
             return args.Length > 0 ? string.Format(message, args) : message;
         }
+
+        private void ChatMessage(BasePlayer player, string messageName, params object[] args) =>
+            player.ChatMessage(GetMessage(player.IPlayer, messageName, args));
+
+        private string GetMessage(IPlayer player, string messageName, params object[] args) =>
+            GetMessage(player.Id, messageName, args);
+
+        private string GetMessage(BasePlayer player, string messageName, params object[] args) =>
+            GetMessage(player.UserIDString, messageName, args);
+
+        private void ReplyToPlayer(IPlayer player, string messageName, params object[] args) =>
+            player.Reply(GetMessage(player, messageName, args));
 
         protected override void LoadDefaultMessages()
         {
@@ -834,6 +871,7 @@ namespace Oxide.Plugins
                 ["Error.NotTracked"] = "Error: That entity is not tracked by Entity Scale Manager.",
                 ["Error.NotScaled"] = "Error: That entity is not scaled.",
                 ["Error.ScaleBlocked"] = "Error: Another plugin prevented you from scaling that entity to size {0}.",
+                ["Error.CannotMoveWithHiddenSpheres"] = "You may not move resized entities while spheres are configured to be hidden.",
                 ["GetScale.Success"] = "Entity scale is: {0}",
                 ["Scale.Success"] = "Entity was scaled to: {0}",
             }, this, "en");
