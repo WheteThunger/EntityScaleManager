@@ -13,7 +13,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Entity Scale Manager", "WhiteThunder", "2.1.1")]
+    [Info("Entity Scale Manager", "WhiteThunder", "2.1.2")]
     [Description("Utilities for resizing entities.")]
     internal class EntityScaleManager : CovalencePlugin
     {
@@ -495,13 +495,11 @@ namespace Oxide.Plugins
         {
             public static void TerminateOnClient(BaseNetworkable entity, Connection connection = null)
             {
-                if (Net.sv.write.Start())
-                {
-                    Net.sv.write.PacketID(Message.Type.EntityDestroy);
-                    Net.sv.write.EntityID(entity.net.ID);
-                    Net.sv.write.UInt8((byte)BaseNetworkable.DestroyMode.None);
-                    Net.sv.write.Send(connection != null ? new SendInfo(connection) : new SendInfo(entity.net.group.subscribers));
-                }
+                var write = Net.sv.StartWrite();
+                write.PacketID(Message.Type.EntityDestroy);
+                write.EntityID(entity.net.ID);
+                write.UInt8((byte)BaseNetworkable.DestroyMode.None);
+                write.Send(connection != null ? new SendInfo(connection) : new SendInfo(entity.net.group.subscribers));
             }
 
             public static void SendUpdateImmediateRecursive(BaseEntity entity)
@@ -535,19 +533,17 @@ namespace Oxide.Plugins
             // - `BasePlayer.SendEntitySnapshot(BaseNetworkable)`
             public void SendModifiedSnapshot(BaseEntity entity, Connection connection)
             {
-                if (Net.sv.write.Start())
+                var write = Net.sv.StartWrite();
+                connection.validate.entityUpdates++;
+                var saveInfo = new BaseNetworkable.SaveInfo()
                 {
-                    connection.validate.entityUpdates++;
-                    var saveInfo = new BaseNetworkable.SaveInfo()
-                    {
-                        forConnection = connection,
-                        forDisk = false
-                    };
-                    Net.sv.write.PacketID(Message.Type.Entities);
-                    Net.sv.write.UInt32(connection.validate.entityUpdates);
-                    ToStreamForNetwork(entity, Net.sv.write, saveInfo);
-                    Net.sv.write.Send(new SendInfo(connection));
-                }
+                    forConnection = connection,
+                    forDisk = false
+                };
+                write.PacketID(Message.Type.Entities);
+                write.UInt32(connection.validate.entityUpdates);
+                ToStreamForNetwork(entity, write, saveInfo);
+                write.Send(new SendInfo(connection));
             }
 
             // Mostly copied from `BaseNetworkable.ToStream(Stream, SaveInfo)`.
