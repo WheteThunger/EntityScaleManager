@@ -13,7 +13,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Entity Scale Manager", "WhiteThunder", "2.1.2")]
+    [Info("Entity Scale Manager", "WhiteThunder", "2.1.3")]
     [Description("Utilities for resizing entities.")]
     internal class EntityScaleManager : CovalencePlugin
     {
@@ -74,7 +74,7 @@ namespace Oxide.Plugins
                     continue;
 
                 var parentSphere = GetParentSphere(entity);
-                if (parentSphere != null && _pluginData.ScaledEntities.Contains(entity.net.ID))
+                if (parentSphere != null && _pluginData.ScaledEntities.Contains(entity.net.ID.Value))
                     RefreshScaledEntity(entity, parentSphere);
             }
         }
@@ -94,7 +94,7 @@ namespace Oxide.Plugins
             if (entity == null || entity.net == null)
                 return;
 
-            if (!_pluginData.ScaledEntities.Remove(entity.net.ID))
+            if (!_pluginData.ScaledEntities.Remove(entity.net.ID.Value))
                 return;
 
             EntitySubscriptionManager.Instance.RemoveEntity(entity.net.ID);
@@ -126,7 +126,7 @@ namespace Oxide.Plugins
             if (entity == null || entity.net == null)
                 return null;
 
-            if (!_pluginData.ScaledEntities.Contains(entity.net.ID))
+            if (!_pluginData.ScaledEntities.Contains(entity.net.ID.Value))
                 return null;
 
             var parentSphere = GetParentSphere(entity);
@@ -193,7 +193,7 @@ namespace Oxide.Plugins
         // This hook is exposed by plugin: Telekinesis.
         private Tuple<BaseEntity, BaseEntity> OnTelekinesisStart(BasePlayer player, BaseEntity entity)
         {
-            if (!_pluginData.ScaledEntities.Contains(entity.net.ID))
+            if (!_pluginData.ScaledEntities.Contains(entity.net.ID.Value))
                 return null;
 
             var parentSphere = GetParentSphere(entity);
@@ -208,7 +208,7 @@ namespace Oxide.Plugins
         // This hook is exposed by plugin: Telekinesis.
         private string CanStartTelekinesis(BasePlayer player, SphereEntity moveEntity, BaseEntity rotateEntity)
         {
-            if (!_pluginData.ScaledEntities.Contains(rotateEntity.net.ID))
+            if (!_pluginData.ScaledEntities.Contains(rotateEntity.net.ID.Value))
                 return null;
 
             return GetMessage(player, "Error.CannotMoveWithHiddenSpheres");
@@ -223,7 +223,7 @@ namespace Oxide.Plugins
             if (entity == null || entity.net == null)
                 return 1;
 
-            if (!_pluginData.ScaledEntities.Contains(entity.net.ID))
+            if (!_pluginData.ScaledEntities.Contains(entity.net.ID.Value))
                 return 1;
 
             var parentSphere = GetParentSphere(entity);
@@ -249,7 +249,7 @@ namespace Oxide.Plugins
             if (entity == null || entity.net == null)
                 return;
 
-            _pluginData.ScaledEntities.Add(entity.net.ID);
+            _pluginData.ScaledEntities.Add(entity.net.ID.Value);
         }
 
         #endregion
@@ -309,7 +309,7 @@ namespace Oxide.Plugins
                 return;
             }
 
-            if (!_pluginData.ScaledEntities.Contains(entity.net.ID))
+            if (!_pluginData.ScaledEntities.Contains(entity.net.ID.Value))
             {
                 ReplyToPlayer(player, "Error.NotTracked");
                 return;
@@ -429,7 +429,7 @@ namespace Oxide.Plugins
             sphereEntity.Kill();
 
             EntitySubscriptionManager.Instance.RemoveEntity(scaledEntity.net.ID);
-            _pluginData.ScaledEntities.Remove(scaledEntity.net.ID);
+            _pluginData.ScaledEntities.Remove(scaledEntity.net.ID.Value);
         }
 
         private static bool TryScaleEntity(BaseEntity entity, float scale)
@@ -441,7 +441,7 @@ namespace Oxide.Plugins
 
             // Only resize an existing sphere if it's registered.
             // This allows spheres fully managed by other plugins to remain untouched.
-            if (parentSphere != null && _pluginData.ScaledEntities.Contains(entity.net.ID))
+            if (parentSphere != null && _pluginData.ScaledEntities.Contains(entity.net.ID.Value))
             {
                 if (scale == parentSphere.currentRadius)
                     return true;
@@ -476,7 +476,7 @@ namespace Oxide.Plugins
             if (scale == 1)
                 return true;
 
-            _pluginData.ScaledEntities.Add(entity.net.ID);
+            _pluginData.ScaledEntities.Add(entity.net.ID.Value);
 
             var entityTransform = entity.transform;
             parentSphere = CreateSphere(entityTransform.localPosition, Quaternion.identity, scale, entity);
@@ -516,14 +516,14 @@ namespace Oxide.Plugins
 
         private abstract class BaseNetworkSnapshotManager
         {
-            private readonly Dictionary<uint, MemoryStream> _networkCache = new Dictionary<uint, MemoryStream>();
+            private readonly Dictionary<NetworkableId, MemoryStream> _networkCache = new Dictionary<NetworkableId, MemoryStream>();
 
             public void Clear()
             {
                 _networkCache.Clear();
             }
 
-            public void InvalidateForEntity(uint entityId)
+            public void InvalidateForEntity(NetworkableId entityId)
             {
                 _networkCache.Remove(entityId);
             }
@@ -623,14 +623,14 @@ namespace Oxide.Plugins
 
             // This is used to keep track of which clients are aware of each entity
             // When we expect the client to destroy an entity, we update this state
-            private readonly Dictionary<uint, Dictionary<ulong, ResizeState>> _networkResizeState = new Dictionary<uint, Dictionary<ulong, ResizeState>>();
+            private readonly Dictionary<NetworkableId, Dictionary<ulong, ResizeState>> _networkResizeState = new Dictionary<NetworkableId, Dictionary<ulong, ResizeState>>();
 
             public void Clear()
             {
                 _networkResizeState.Clear();
             }
 
-            private Dictionary<ulong, ResizeState> EnsureEntity(uint entityId)
+            private Dictionary<ulong, ResizeState> EnsureEntity(NetworkableId entityId)
             {
                 Dictionary<ulong, ResizeState> clientToResizeState;
                 if (!_networkResizeState.TryGetValue(entityId, out clientToResizeState))
@@ -641,12 +641,12 @@ namespace Oxide.Plugins
                 return clientToResizeState;
             }
 
-            public void InitResized(uint entityId, ulong userId)
+            public void InitResized(NetworkableId entityId, ulong userId)
             {
                 EnsureEntity(entityId).Add(userId, ResizeState.Resized);
             }
 
-            public ResizeState GetResizeState(uint entityId, ulong userId)
+            public ResizeState GetResizeState(NetworkableId entityId, ulong userId)
             {
                 var clientToResizeState = EnsureEntity(entityId);
 
@@ -660,7 +660,7 @@ namespace Oxide.Plugins
 
             // Returns true if it was still resizing.
             // Absence in the data structure indicates the client deleted it.
-            public bool DoneResizing(uint entityId, ulong userId)
+            public bool DoneResizing(NetworkableId entityId, ulong userId)
             {
                 Dictionary<ulong, ResizeState> clientToResizeState;
                 if (!_networkResizeState.TryGetValue(entityId, out clientToResizeState))
@@ -673,7 +673,7 @@ namespace Oxide.Plugins
                 return true;
             }
 
-            public void RemoveEntitySubscription(uint entityId, ulong userId)
+            public void RemoveEntitySubscription(NetworkableId entityId, ulong userId)
             {
                 Dictionary<ulong, ResizeState> clientToResizeState;
                 if (!_networkResizeState.TryGetValue(entityId, out clientToResizeState))
@@ -682,7 +682,7 @@ namespace Oxide.Plugins
                 clientToResizeState.Remove(userId);
             }
 
-            public void RemoveEntity(uint entityId)
+            public void RemoveEntity(NetworkableId entityId)
             {
                 _networkResizeState.Remove(entityId);
             }
@@ -701,7 +701,7 @@ namespace Oxide.Plugins
         private class StoredData
         {
             [JsonProperty("ScaledEntities")]
-            public HashSet<uint> ScaledEntities = new HashSet<uint>();
+            public HashSet<ulong> ScaledEntities = new HashSet<ulong>();
 
             public static StoredData Load() =>
                 Interface.Oxide.DataFileSystem.ReadObject<StoredData>(_pluginInstance.Name) ?? new StoredData();
