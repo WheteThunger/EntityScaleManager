@@ -33,6 +33,9 @@ internal class EntityScaleManager : CovalencePlugin
     // since the amount of time required seems to depend on the scale.
     private const float ExpectedResizeDuration = 7f;
 
+    private EntitySubscriptionManager _entitySubscriptionManager = new();
+    private NetworkSnapshotManager _networkSnapshotManager = new();
+
     #endregion
 
     #region Hooks
@@ -56,8 +59,8 @@ internal class EntityScaleManager : CovalencePlugin
     {
         _data.Save();
 
-        EntitySubscriptionManager.Instance.Clear();
-        NetworkSnapshotManager.Instance.Clear();
+        _entitySubscriptionManager.Clear();
+        _networkSnapshotManager.Clear();
 
         _data = null;
         _config = null;
@@ -97,7 +100,7 @@ internal class EntityScaleManager : CovalencePlugin
         if (!_data.ScaledEntities.Remove(entity.net.ID.Value))
             return;
 
-        EntitySubscriptionManager.Instance.RemoveEntity(entity.net.ID);
+        _entitySubscriptionManager.RemoveEntity(entity.net.ID);
 
         var parentSphere = GetParentSphere(entity);
         if (parentSphere == null)
@@ -105,7 +108,7 @@ internal class EntityScaleManager : CovalencePlugin
 
         if (_config.HideSpheresAfterResize)
         {
-            NetworkSnapshotManager.Instance.InvalidateForEntity(entity.net.ID);
+            _networkSnapshotManager.InvalidateForEntity(entity.net.ID);
         }
 
         var parentSphereForClosure = parentSphere;
@@ -127,7 +130,7 @@ internal class EntityScaleManager : CovalencePlugin
 
     private void OnPlayerDisconnected(BasePlayer player)
     {
-        EntitySubscriptionManager.Instance.RemoveSubscriber(player.userID);
+        _entitySubscriptionManager.RemoveSubscriber(player.userID);
     }
 
     private object OnEntitySnapshot(BaseEntity entity, Connection connection)
@@ -145,16 +148,16 @@ internal class EntityScaleManager : CovalencePlugin
         // Detect when the vanilla network cache has been cleared in order to invalidate the custom cache.
         if (entity._NetworkCache == null)
         {
-            NetworkSnapshotManager.Instance.InvalidateForEntity(entity.net.ID);
+            _networkSnapshotManager.InvalidateForEntity(entity.net.ID);
         }
 
-        var resizeState = EntitySubscriptionManager.Instance.GetResizeState(entity.net.ID, connection.ownerid);
+        var resizeState = _entitySubscriptionManager.GetResizeState(entity.net.ID, connection.ownerid);
         if (resizeState == ResizeState.Resized)
         {
             // Don't track CPU time of this since it's almost identical to the vanilla behavior being cancelled.
             // Tracking it would give server operators false information that this plugin is spending more CPU time than it is.
             TrackEnd();
-            NetworkSnapshotManager.Instance.SendModifiedSnapshot(entity, connection);
+            _networkSnapshotManager.SendModifiedSnapshot(entity, connection);
             TrackStart();
             return True;
         }
@@ -167,10 +170,10 @@ internal class EntityScaleManager : CovalencePlugin
             {
                 if (entity != null
                     && parentSphere != null
-                    && EntitySubscriptionManager.Instance.DoneResizing(entity.net.ID, connection.ownerid))
+                    && _entitySubscriptionManager.DoneResizing(entity.net.ID, connection.ownerid))
                 {
                     // Send a snapshot to the client indicating that the entity is not parented to the sphere.
-                    NetworkSnapshotManager.Instance.SendModifiedSnapshot(entity, connection);
+                    _networkSnapshotManager.SendModifiedSnapshot(entity, connection);
 
                     // Terminate the sphere on the client.
                     // Subsequent snapshots to this client will use different logic.
@@ -197,7 +200,7 @@ internal class EntityScaleManager : CovalencePlugin
             if (entity == null || entity.net == null)
                 continue;
 
-            EntitySubscriptionManager.Instance.RemoveEntitySubscription(entity.net.ID, player.userID);
+            _entitySubscriptionManager.RemoveEntitySubscription(entity.net.ID, player.userID);
         }
     }
 
@@ -415,7 +418,7 @@ internal class EntityScaleManager : CovalencePlugin
         {
             foreach (var subscriber in scaledEntity.net.group.subscribers)
             {
-                EntitySubscriptionManager.Instance.InitResized(scaledEntity.net.ID, subscriber.ownerid);
+                _entitySubscriptionManager.InitResized(scaledEntity.net.ID, subscriber.ownerid);
             }
         }
     }
@@ -436,7 +439,7 @@ internal class EntityScaleManager : CovalencePlugin
 
         sphereEntity.Kill();
 
-        EntitySubscriptionManager.Instance.RemoveEntity(scaledEntity.net.ID);
+        _entitySubscriptionManager.RemoveEntity(scaledEntity.net.ID);
         _data.ScaledEntities.Remove(scaledEntity.net.ID.Value);
     }
 
@@ -463,7 +466,7 @@ internal class EntityScaleManager : CovalencePlugin
             // Remove the entity from the subscriber manager to allow clients to resize it.
             // This could result in a client who is already resizing it to not resize it fully,
             // but that's not worth the trouble to fix.
-            EntitySubscriptionManager.Instance.RemoveEntity(entity.net.ID);
+            _entitySubscriptionManager.RemoveEntity(entity.net.ID);
 
             if (scale == 1)
             {
@@ -634,8 +637,6 @@ internal class EntityScaleManager : CovalencePlugin
 
     private class NetworkSnapshotManager : BaseNetworkSnapshotManager
     {
-        public static NetworkSnapshotManager Instance { get; } = new();
-
         protected override void HandleOnEntitySaved(BaseEntity entity, BaseNetworkable.SaveInfo saveInfo)
         {
             var parentSphere = GetParentSphere(entity);
@@ -667,7 +668,6 @@ internal class EntityScaleManager : CovalencePlugin
 
     private class EntitySubscriptionManager
     {
-        public static EntitySubscriptionManager Instance { get; } = new();
         private SimpleDictionaryPool<ulong, ResizeState> _dictPool = new();
 
         // This is used to keep track of which clients are aware of each entity
