@@ -12,7 +12,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins;
 
-[Info("Entity Scale Manager", "WhiteThunder", "2.1.3")]
+[Info("Entity Scale Manager", "WhiteThunder", "2.1.4")]
 [Description("Utilities for resizing entities.")]
 internal class EntityScaleManager : CovalencePlugin
 {
