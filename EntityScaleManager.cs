@@ -523,6 +523,47 @@ internal class EntityScaleManager : CovalencePlugin
 
     #endregion
 
+    #region Pooling
+
+    private class SimplePool<T> where T : class, new()
+    {
+        private List<T> _pool = new();
+
+        public virtual T Get()
+        {
+            var item = _pool.LastOrDefault();
+            if (item != null)
+            {
+                _pool.RemoveAt(_pool.Count - 1);
+                return item;
+            }
+
+            return new T();
+        }
+
+        public virtual void Free(ref T item)
+        {
+            _pool.Add(item);
+            item = null;
+        }
+
+        public void Clear()
+        {
+            _pool.Clear();
+        }
+    }
+
+    private class SimpleDictionaryPool<TKey, TValue> : SimplePool<Dictionary<TKey, TValue>>
+    {
+        public override void Free(ref Dictionary<TKey, TValue> dict)
+        {
+            dict.Clear();
+            base.Free(ref dict);
+        }
+    }
+
+    #endregion
+
     #region Network Snapshot Manager
 
     private abstract class BaseNetworkSnapshotManager
@@ -627,6 +668,7 @@ internal class EntityScaleManager : CovalencePlugin
     private class EntitySubscriptionManager
     {
         public static EntitySubscriptionManager Instance { get; } = new();
+        private SimpleDictionaryPool<ulong, ResizeState> _dictPool = new();
 
         // This is used to keep track of which clients are aware of each entity
         // When we expect the client to destroy an entity, we update this state
@@ -634,18 +676,14 @@ internal class EntityScaleManager : CovalencePlugin
 
         public void Clear()
         {
-            _networkResizeState.Clear();
-        }
-
-        private Dictionary<ulong, ResizeState> EnsureEntity(NetworkableId entityId)
-        {
-            if (!_networkResizeState.TryGetValue(entityId, out var clientToResizeState))
+            foreach (var dict in _networkResizeState.Values)
             {
-                clientToResizeState = new Dictionary<ulong, ResizeState>();
-                _networkResizeState[entityId] = clientToResizeState;
+                var d = dict;
+                _dictPool.Free(ref d);
             }
 
-            return clientToResizeState;
+            _dictPool.Clear();
+            _networkResizeState.Clear();
         }
 
         public void InitResized(NetworkableId entityId, ulong userId)
@@ -687,7 +725,11 @@ internal class EntityScaleManager : CovalencePlugin
 
         public void RemoveEntity(NetworkableId entityId)
         {
+            if (!_networkResizeState.TryGetValue(entityId, out var clientToResizeState))
+                return;
+
             _networkResizeState.Remove(entityId);
+            _dictPool.Free(ref clientToResizeState);
         }
 
         public void RemoveSubscriber(ulong userId)
@@ -696,6 +738,17 @@ internal class EntityScaleManager : CovalencePlugin
             {
                 entry.Value.Remove(userId);
             }
+        }
+
+        private Dictionary<ulong, ResizeState> EnsureEntity(NetworkableId entityId)
+        {
+            if (!_networkResizeState.TryGetValue(entityId, out var clientToResizeState))
+            {
+                clientToResizeState = _dictPool.Get();
+                _networkResizeState[entityId] = clientToResizeState;
+            }
+
+            return clientToResizeState;
         }
     }
 
