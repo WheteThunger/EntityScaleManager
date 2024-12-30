@@ -12,7 +12,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins;
 
-[Info("Entity Scale Manager", "WhiteThunder", "2.1.4")]
+[Info("Entity Scale Manager", "WhiteThunder", "2.1.5")]
 [Description("Utilities for resizing entities.")]
 internal class EntityScaleManager : CovalencePlugin
 {
@@ -299,6 +299,12 @@ internal class EntityScaleManager : CovalencePlugin
         if (entity == null)
         {
             ReplyToPlayer(player, "Error.NoEntityFound");
+            return;
+        }
+
+        if (entity is BasePlayer)
+        {
+            ReplyToPlayer(player, "Error.EntityNotSafeToScale");
             return;
         }
 
@@ -924,6 +930,7 @@ internal class EntityScaleManager : CovalencePlugin
             ["Error.NoPermission"] = "You don't have permission to do that.",
             ["Error.Syntax"] = "Syntax: {0} <size>",
             ["Error.NoEntityFound"] = "Error: No entity found.",
+            ["Error.EntityNotSafeToScale"] = "Error: That entity cannot be safely scaled.",
             ["Error.NotTracked"] = "Error: That entity is not tracked by Entity Scale Manager.",
             ["Error.NotScaled"] = "Error: That entity is not scaled.",
             ["Error.ScaleBlocked"] = "Error: Another plugin prevented you from scaling that entity to size {0}.",
