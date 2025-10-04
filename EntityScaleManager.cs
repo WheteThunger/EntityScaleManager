@@ -1,5 +1,4 @@
-﻿using System;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Oxide.Core;
 using Oxide.Core.Libraries.Covalence;
 using Oxide.Core.Plugins;
@@ -37,13 +36,23 @@ internal class EntityScaleManager : CovalencePlugin
     {
         _data.MigrateLegacySpheres();
 
+        List<ulong> entityIdsToRemove = new();
+
         foreach (var (entityId, scale) in _data.EntityScale)
         {
             var entity = BaseNetworkable.serverEntities.Find(new NetworkableId(entityId)) as BaseEntity;
             if (entity == null)
+            {
+                entityIdsToRemove.Add(entityId);
                 continue;
+            }
 
             SetEntityScale(entity, scale);
+        }
+
+        foreach (var entityId in entityIdsToRemove)
+        {
+            _data.ForgetScale(entityId);
         }
     }
 
@@ -347,15 +356,20 @@ internal class EntityScaleManager : CovalencePlugin
             _isDirty = true;
         }
 
+        public void ForgetScale(ulong entityId)
+        {
+            if (!EntityScale.Remove(entityId))
+                return;
+
+            _isDirty = true;
+        }
+
         public void ForgetScale(BaseEntity entity)
         {
             if (entity?.net == null)
                 return;
 
-            if (!EntityScale.Remove(entity.net.ID.Value))
-                return;
-
-            _isDirty = true;
+            ForgetScale(entity.net.ID.Value);
         }
 
         public void MigrateLegacySpheres()
